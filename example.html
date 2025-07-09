@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Widget Example</title>
+</head>
+<body>
+    <h1>Google Maps Widget Demo</h1>
+    
+    <div id="widget-container"></div>
+    
+    <script src="widget.js"></script>
+    <script>
+        // Initialize the widget with your API key
+        const widget = new GoogleMapsWidget('widget-container', {
+            placeholder: 'Enter a city or address...',
+            width: 500,
+            height: 400,
+            apiKey: 'YOUR_GOOGLE_MAPS_API_KEY'
+        });
+    </script>
+</body>
+</html>
