@@ -1,7 +1,8 @@
-.metrics{
+.overlay{
     background-color: white;
     width: 400px;
-    height: 350px;
+    min-height: 350px;
+    max-height: 500px;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -9,5 +10,80 @@
     margin-inline: 13px;
     padding: 20px;
     border-radius: 12px;
-    outline: 2px solid #def6ef;
   }
+
+.category{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    padding: 15px;
+    width: 65px;
+    height: 65px;
+}
+
+.category_img, .category_p{
+    margin: 0;
+}
+
+.category_p{
+    font-size: small;
+}
+
+.categories{
+    border-bottom: 0.5px solid rgb(199, 199, 199);
+}
+
+.category:hover{
+    background-color: rgb(240, 240, 240);
+}
+
+.active{
+    padding-bottom: 15px;
+    font-weight: bold;
+    color: #2fc89b;
+}
+
+.metrics{
+    overflow-y: scroll;
+    max-height: 300px;
+}
+
+.metric{
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 5px 10px;
+    border-radius: 10px;
+}
+
+.metric_score{
+    background-color: #2fc89b;
+    padding: 5px;
+    color: white;
+    font-weight: bold;
+    border-radius: 5px;
+}
+
+.metric_label{
+    font-weight: bold;
+}
+
+.metric:hover{
+    background-color: rgb(240, 240, 240);
+    color: #205ad1;
+}
+
+.poweredBy{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding-top: 10px;
+}
+
+.poweredBy > p{
+    font-size: small;
+}
