@@ -20,16 +20,6 @@ interface LocationData {
     living_quality?: any;
   }
   
-  interface GeocodeResponse {
-    success: boolean;
-    coordinates?: {
-      latitude: number;
-      longitude: number;
-    };
-    formatted_address?: string;
-    error?: string;
-  }
-  
   interface SchoolsApiResponse {
     success: boolean;
     education_analysis: {
@@ -169,36 +159,63 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
     livingData: LivingApiResponse
   ): LocationData {
     // Extract key metrics for your widget format
-    const metrics: { [key: string]: { score: number; description: string; thisLocation: number } } = {};
+    const metrics: { [key: string]: { category:string; label:string; score: number; description: string; thisLocation: number } } = {};
 
     // Add education metrics
     if (schoolsData.success && schoolsData.education_analysis) {
       const education = schoolsData.education_analysis;
       
+      // School density
+      if (education.components.school_density) {
+        metrics.school_density = {
+          category: "education",
+          label: "School Density",
+          score: education.components.school_density.schools_per_km2 || 0,
+          description: "Number of KG-G12 schools per km squared calculated with a 5km radius",
+          thisLocation: education.components.school_density.schools_per_km2 || 0
+        };
+      }
+
+      if (education.components.school_quality) {
+        metrics.school_quality = {
+          category: "education",
+          label: "School Rating",
+          score: education.components.school_quality.score || 0,
+          description: "Average of all KG-G12 schools in a 5km radius of location",
+          thisLocation: education.components.school_quality.score || 0,
+        };
+      }
+
       // Primary/Secondary Schools
       if (education.components.proximity_analysis?.kg_g12_schools) {
         metrics.kg_g12 = {
-          score: education.components.proximity_analysis.kg_g12_schools.proximity_score || 0,
+          category: "education",
+          label: "KG-G12 School Proximity",
+          score: education.components.proximity_analysis.kg_g12_schools.score || 0,
           description: "Access to primary and secondary schools",
-          thisLocation: Math.round((education.components.proximity_analysis.kg_g12_schools.proximity_score || 0) * 10)
+          thisLocation: education.components.proximity_analysis.kg_g12_schools.score || 0
         };
       }
 
       // Nursery Schools
       if (education.components.proximity_analysis?.nursery_schools) {
         metrics.nursery = {
-          score: education.components.proximity_analysis.nursery_schools.proximity_score || 0,
+          category: "education",
+          label: "Nursery Proximity",
+          score: education.components.proximity_analysis.nursery_schools.score || 0,
           description: "Access to nursery schools",
-          thisLocation: Math.round((education.components.proximity_analysis.nursery_schools.proximity_score || 0) * 10)
+          thisLocation: education.components.proximity_analysis.nursery_schools.score || 0
         };
       }
 
       // Universities
       if (education.components.proximity_analysis?.universities) {
         metrics.university = {
-          score: education.components.proximity_analysis.universities.proximity_score || 0,
+          category: "education",
+          label: "University Proximity",
+          score: education.components.proximity_analysis.universities.score || 0,
           description: "Access to higher education",
-          thisLocation: Math.round((education.components.proximity_analysis.universities.proximity_score || 0) * 10)
+          thisLocation: education.components.proximity_analysis.universities.score || 0
         };
       }
     }
@@ -210,6 +227,8 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
       // Restaurants & Cafes
       if (living.components.dining_entertainment) {
         metrics.dining = {
+          category: "living",
+          label: "Dining",
           score: living.components.dining_entertainment.score || 0,
           description: "Restaurant and cafe density",
           thisLocation: Math.round(living.components.dining_entertainment.score || 0)
@@ -219,6 +238,8 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
       // Shopping & Groceries
       if (living.components.shopping_groceries) {
         metrics.shopping = {
+          category: "living",
+          label: "Shopping and Grocery",
           score: living.components.shopping_groceries.score || 0,
           description: "Shopping and grocery accessibility",
           thisLocation: Math.round(living.components.shopping_groceries.score || 0)
@@ -228,6 +249,8 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
       // Healthcare
       if (living.components.healthcare_access) {
         metrics.healthcare = {
+          category: "living",
+          label: "Healthcare",
           score: living.components.healthcare_access.score || 0,
           description: "Healthcare facility access",
           thisLocation: Math.round(living.components.healthcare_access.score || 0)
@@ -237,8 +260,10 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
       // Walkability
       if (living.components.walkability) {
         metrics.walkability = {
+          category: "living",
+          label: "Walkability",
           score: living.components.walkability.score || 0,
-          description: "Walkability and transit access",
+          description: "Walkability",
           thisLocation: Math.round(living.components.walkability.score || 0)
         };
       }
@@ -313,45 +338,6 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
     { id: 'education', icon: '/images/education.png', label: 'Education'}
   ];
 
-  const amenityCategories = [
-    { 
-      id: 'grocery', 
-      category: 'living',
-      label: 'Grocery', 
-      score: locationData?.metrics?.grocery?.score || 0
-    },
-    { 
-      id: 'shopping', 
-      category: 'living',
-      label: 'Shopping', 
-      score: locationData?.metrics?.shopping?.score || 0
-    },
-    { 
-        id: 'cafes', 
-        category: 'living',
-        label: 'Cafes', 
-        score: locationData?.metrics?.grocery?.score || 0
-      },
-      { 
-        id: 'resturants', 
-        category: 'living',
-        label: 'Resturants', 
-        score: locationData?.metrics?.shopping?.score || 0
-      },
-    { 
-        id: 'nursery', 
-        category: 'education',
-        label: 'Nursey', 
-        score: locationData?.metrics?.grocery?.score || 0
-    },
-    { 
-        id: 'primary', 
-        category: 'education',
-        label: 'Primary', 
-        score: locationData?.metrics?.shopping?.score || 0
-    }
-  ];
-
   // Memoize the map rendering to prevent re-renders when expandedCategories changes
   const mapComponent = useMemo(() => {
     if (locationData) {
@@ -405,14 +391,14 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
               </div>
             ) : locationData ? (
               <div className="space-y-3 metrics">
-                {amenityCategories.map((amenity) => {
-                  return (
-                    <div key={amenity.id} className="metric">
-                      <p className='metric_score'>{amenity.score}</p>
-                      <p className='metric_label'>{amenity.label}</p>
+                {Object.entries(locationData.metrics)
+                  .filter(([key, metric]) => metric.category === activeCategory)
+                  .map(([key, metric]) => (
+                    <div key={key} className="metric">
+                      <p className='metric_score'>{Math.round(metric.score)}</p>
+                      <p className='metric_label'>{metric.label}</p>
                     </div>
-                  );
-                })}
+                  ))}
               </div>
             ) : (
               <div className="text-center text-gray-500 py-8">
