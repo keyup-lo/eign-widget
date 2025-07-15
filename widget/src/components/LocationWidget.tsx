@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, memo, useMemo } from 'react';
-import { MapPin, ShoppingBag, UtensilsCrossed, Coffee, Home, Car, DollarSign, Users, Trees, Building, GraduationCap, ChevronDown, ChevronUp } from 'lucide-react';
 import Image from 'next/image'
 import './widget.css';
 
@@ -41,6 +40,22 @@ interface LocationData {
         shopping_groceries: any;
         healthcare_access: any;
         walkability: any;
+      };
+    };
+  }
+
+  interface AccessApiResponse {
+    success: boolean;
+    data: {
+      overall_score: number;
+      grade: any;
+      components: {
+        metro_proximity: any;
+        bus_connectivity: any;
+        road_access: any;
+        car_independence: any;
+        commute_efficiency: any;
+        bike_walk_infrastructure: any;
       };
     };
   }
@@ -92,6 +107,7 @@ export default function LocationWidget({
   const GOOGLE_MAPS_API_KEY = "AIzaSyAeec6wFvJCA2yrKNsTQnRBvmY7DC-vA40";
   const SCHOOLS_API_BASE_URL = "http://localhost:8000/api/schools";
   const LIVING_API_BASE_URL = "http://localhost:8000/api/living";
+  const ACCESS_API_BASE_URL = "http://localhost:8000/api/transportation";
 
 // Step 1: Convert location name to coordinates
 async function geocodeLocation(locationName: string): Promise<{ lat: number; lng: number } | null> {
@@ -153,11 +169,30 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
     }
   }
 
+  // Step 4: Fetch access comprehensive data
+  async function fetchAccessData(lat: number, lng: number): Promise<AccessApiResponse> {
+    try {
+      const response = await fetch(
+        `${ACCESS_API_BASE_URL}/comprehensive?lat=${lat}&lng=${lng}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`ACCESS API error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('ACCESS API error:', error);
+      throw error;
+    }
+  }
+
   function transformApiDataToLocationData(
     locationName: string,
     coordinates: { lat: number; lng: number },
     schoolsData: SchoolsApiResponse,
-    livingData: LivingApiResponse
+    livingData: LivingApiResponse,
+    accessData: AccessApiResponse
   ): LocationData {
     // Extract key metrics for your widget format
     const metrics: { [key: string]: { category:string; label:string; score: number; description: string; thisLocation: number } } = {};
@@ -270,6 +305,77 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
       }
     }
 
+    // Add access data metrics
+    if (accessData.success && accessData.data) {
+      const access = accessData.data;
+
+      // Proximity to metro stations
+      if (access.components.metro_proximity) {
+        metrics.metro_proximity = {
+          category: "access",
+          label: "Metro Proximity",
+          score: access.components.metro_proximity.score || 0,
+          description: "Proximity to metro station",
+          thisLocation: Math.round(access.components.metro_proximity.score || 0)
+        };
+      }
+
+      // Bus stop density
+      if (access.components.bus_connectivity) {
+        metrics.bus_connectivity = {
+          category: "access",
+          label: "Bus stop density",
+          score: access.components.bus_connectivity.score || 0,
+          description: "Score based on number of bus stops per km squared",
+          thisLocation: Math.round(access.components.bus_connectivity.score || 0)
+        };
+      }
+
+      // Road access index
+      if (access.components.road_access	) {
+        metrics.road_access	 = {
+          category: "access",
+          label: "Road Access",
+          score: access.components.road_access.score || 0,
+          description: "Score based on distance to major roads and access density",
+          thisLocation: Math.round(access.components.road_access.score || 0)
+        };
+      }
+
+      // Car Ownership Proxy
+      if (access.components.car_independence) {
+        metrics.car_independence = {
+          category: "access",
+          label: "Car Ownership Proxy",
+          score: access.components.car_independence.score || 0,
+          description: "Ratio of car dependent places of interest to the total number of places of interest",
+          thisLocation: Math.round(access.components.car_independence.score || 0)
+        };
+      }
+
+      // Commute time to Business Hubs
+      if (access.components.commute_efficiency) {
+        metrics.commute_efficiency = {
+          category: "access",
+          label: "Commute time to Business Hubs",
+          score: access.components.commute_efficiency.score || 0,
+          description: "Score based on average car/public transportation commute times to key areas",
+          thisLocation: Math.round(access.components.commute_efficiency.score || 0)
+        };
+      }
+
+      // Walk/Drive/Bike Infrastructure Mix
+      if (access.components.bike_walk_infrastructure) {
+        metrics.bike_walk_infrastructure = {
+          category: "access",
+          label: "Walk, Drive, Bike Infrastructure Mix",
+          score: access.components.bike_walk_infrastructure.score || 0,
+          description: "Score based on the proportion of road types and pathways",
+          thisLocation: Math.round(access.components.bike_walk_infrastructure.score || 0)
+        };
+      }
+    }
+
     return {
       locationName,
       coordinates,
@@ -299,9 +405,10 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
 
       // Step 2 & 3: Fetch both APIs concurrently
       console.log(`📊 Fetching comprehensive data...`);
-      const [schoolsData, livingData] = await Promise.all([
+      const [schoolsData, livingData, accessData] = await Promise.all([
         fetchSchoolsData(coordinates.lat, coordinates.lng),
-        fetchLivingData(coordinates.lat, coordinates.lng)
+        fetchLivingData(coordinates.lat, coordinates.lng),
+        fetchAccessData(coordinates.lat, coordinates.lng)
       ]);
 
       console.log(`🎓 Schools data:`, schoolsData);
@@ -312,7 +419,8 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
         locationName,
         coordinates,
         schoolsData,
-        livingData
+        livingData,
+        accessData
       );
 
       console.log(`✅ Transformed data:`, transformedData);
@@ -336,7 +444,8 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
 
   const categories = [
     { id: 'living', icon: '/images/living.png', label: 'Living'},
-    { id: 'education', icon: '/images/education.png', label: 'Education'}
+    { id: 'education', icon: '/images/education.png', label: 'Education'},
+    { id: 'access', icon: '/images/access.png', label: 'Access'}
   ];
 
   const toggleExpanded = (metricKey: string) => {
@@ -426,7 +535,7 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
                         </p>
                         
                         {/* Enhanced Progress Bar */}
-                        <div style={{ width: '100%' }}>
+                        <div style={{ width: '100%', marginBottom: '10px' }}>
                           <div style={{ 
                             display: 'flex', 
                             justifyContent: 'space-between', 
@@ -440,7 +549,7 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
                             width: '100%', 
                             backgroundColor: '#e5e7eb', 
                             borderRadius: '5px', 
-                            height: '20px' 
+                            height: '20px', 
                           }}>
                             <div 
                               style={{ 
