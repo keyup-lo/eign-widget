@@ -6,7 +6,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    margin-block: 120px;
+    margin-block: 130px;
     margin-inline: 13px;
     padding: 20px;
     border-radius: 12px;
@@ -51,15 +51,35 @@
     max-height: 300px;
 }
 
-.metric{
+.metric_header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-inline: 5px;
+    border-radius: 5px;
+}
+
+.metric_container{
+    padding: 5px 15px;
+    border-bottom: 0.5px solid rgb(199, 199, 199);
+}
+
+.metric_desc{
+    font-weight: 600;
+}
+
+.metric_details{
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 5px 10px;
-    border-radius: 10px;
 }
 
 .metric_score{
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: #2fc89b;
     padding: 5px;
     color: white;
@@ -68,14 +88,18 @@
 }
 
 .metric_label{
-    font-weight: bold;
+    font-weight: 500;
 }
 
-.metric:hover{
+.metric_header:hover{
     background-color: rgb(240, 240, 240);
     color: #205ad1;
 }
 
+.bold_label{
+    font-weight: bold;
+    color: #205ad1;
+}
 .poweredBy{
     display: flex;
     align-items: center;

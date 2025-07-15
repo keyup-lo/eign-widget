@@ -85,6 +85,7 @@ export default function LocationWidget({
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState('living');
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Your API configuration
@@ -338,6 +339,10 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
     { id: 'education', icon: '/images/education.png', label: 'Education'}
   ];
 
+  const toggleExpanded = (metricKey: string) => {
+    setExpandedMetric(expandedMetric === metricKey ? null : metricKey);
+  };
+
   // Memoize the map rendering to prevent re-renders when expandedCategories changes
   const mapComponent = useMemo(() => {
     if (locationData) {
@@ -393,12 +398,70 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
               <div className="space-y-3 metrics">
                 {Object.entries(locationData.metrics)
                   .filter(([key, metric]) => metric.category === activeCategory)
-                  .map(([key, metric]) => (
-                    <div key={key} className="metric">
-                      <p className='metric_score'>{Math.round(metric.score)}</p>
-                      <p className='metric_label'>{metric.label}</p>
+                  .map(([key, metric]) => {
+                    const isExpanded = expandedMetric === key;
+                    return(
+                      <div key={key} className='metric_container'>
+                    <div className="metric_header" onClick={() => toggleExpanded(key)}>
+                      <div className='metric_details'>
+                        <p className='metric_score'>{Math.round(metric.score * 10)/10}</p>
+                        <p className={isExpanded ? 'bold_label' : 'metric_label'}>{metric.label}</p>
+                      </div>
+                      {isExpanded ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M20 16L12 8L4 16" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M4 8L12 16L20 8" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+
+                    
                     </div>
-                  ))}
+                    {isExpanded && (
+                      <div className="more_details">
+                        <p className='metric_desc'>
+                          {metric.description}
+                        </p>
+                        
+                        {/* Enhanced Progress Bar */}
+                        <div style={{ width: '100%' }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            fontSize: '12px', 
+                            color: '#6b7280', 
+                            marginBottom: '4px' 
+                          }}>
+                            <span>This Location</span>
+                          </div>
+                          <div style={{ 
+                            width: '100%', 
+                            backgroundColor: '#e5e7eb', 
+                            borderRadius: '5px', 
+                            height: '20px' 
+                          }}>
+                            <div 
+                              style={{ 
+                                height: '20px', 
+                                borderRadius: '5px', 
+                                transition: 'all 0.5s ease',
+                                backgroundColor: 
+                                  metric.score >= 8 ? '#10b981' :
+                                  metric.score >= 6 ? '#eab308' :
+                                  metric.score >= 4 ? '#f97316' : '#ef4444',
+                                width: `${Math.min((metric.score / 10) * 100, 100)}%`
+                              }}
+                            ></div>
+                          </div>
+                          </div>
+                      
+                      </div>
+                    )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center text-gray-500 py-8">
