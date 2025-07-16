@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, memo, useMemo } from 'react';
+import React, { useState, useEffect, memo, useMemo, useRef } from 'react';
 import Image from 'next/image'
 import './widget.css';
 
@@ -72,6 +72,7 @@ interface GoogleMapProps {
 }
 
 // Memoized GoogleMap component to prevent re-renders
+/*
 const GoogleMap = memo(function GoogleMap({ coordinates, locationName, googleMapsApiKey }: GoogleMapProps) {
   console.log('GoogleMap component rendered for:', locationName);
   const mapSrc = `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(locationName)}&zoom=15`;
@@ -89,6 +90,181 @@ const GoogleMap = memo(function GoogleMap({ coordinates, locationName, googleMap
       referrerPolicy="no-referrer-when-downgrade"
       title={`Map of ${locationName}`}
     />
+  );
+});
+*/
+
+const GoogleMap = memo(function GoogleMap({ coordinates, locationName, googleMapsApiKey }: GoogleMapProps) {
+  console.log('GoogleMap component rendered for:', locationName);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isGreyMode, setIsGreyMode] = useState(true);
+  const mapInstanceRef = useRef<any>(null);
+  
+  // Define map styles
+  const greyStyles = [
+    {
+      featureType: "all",
+      stylers: [
+        { saturation: -100 },
+        { lightness: 20 }
+      ]
+    },
+    {
+      featureType: "poi",
+      stylers: [{ visibility: "off" }]
+    },
+    {
+      featureType: "transit",
+      stylers: [{ visibility: "off" }]
+    }
+  ];
+
+  const subtleColorStyles = [
+    {
+      featureType: "all",
+      stylers: [
+        { saturation: -20 },  // Just slightly reduce saturation
+        { lightness: 5 }      // Very slight lightness increase
+      ]
+    },
+    {
+      featureType: "poi",
+      stylers: [{ visibility: "off" }]
+    },
+    {
+      featureType: "transit",
+      stylers: [{ visibility: "off" }]
+    }
+  ];
+  
+  // Load Google Maps API only once
+  useEffect(() => {
+    if (window.google && window.google.maps) {
+      setIsLoaded(true);
+      return;
+    }
+
+    const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+    if (existingScript) {
+      const handleLoad = () => {
+        if (window.google && window.google.maps) {
+          setIsLoaded(true);
+          existingScript.removeEventListener('load', handleLoad);
+        }
+      };
+      existingScript.addEventListener('load', handleLoad);
+      return () => existingScript.removeEventListener('load', handleLoad);
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setIsLoaded(true);
+    document.head.appendChild(script);
+  }, [googleMapsApiKey]);
+  
+  // Initialize map when API is loaded
+  useEffect(() => {
+    if (!isLoaded || !mapRef.current) return;
+    
+    const map = new window.google.maps.Map(mapRef.current, {
+      center: coordinates || { lat: 25.0657, lng: 55.1713 },
+      zoom: 15,
+      styles: isGreyMode ? greyStyles : subtleColorStyles,
+      mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: window.google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: window.google.maps.ControlPosition.TOP_RIGHT
+      }
+    });
+    
+    // Store map instance reference
+    mapInstanceRef.current = map;
+    
+    // Add only your main marker
+    new window.google.maps.Marker({
+      position: coordinates || { lat: 25.0657, lng: 55.1713 },
+      map: map,
+      title: locationName
+    });
+  }, [isLoaded, coordinates, locationName]);
+
+  // Update map styles when mode changes
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setOptions({
+        styles: isGreyMode ? greyStyles : subtleColorStyles
+      });
+    }
+  }, [isGreyMode]);
+
+  const toggleMapMode = () => {
+    setIsGreyMode(!isGreyMode);
+  };
+  
+  return (
+    <div style={{ position: 'relative' }}>
+      <div 
+        ref={mapRef}
+        style={{
+          width: '1000px',
+          height: '700px',
+          borderRadius: '12px',
+          backgroundColor: '#f0f0f0'
+        }}
+      >
+        {!isLoaded && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: '#666'
+          }}>
+            Loading map...
+          </div>
+        )}
+      </div>
+      
+      {/* Color/Grey Toggle Button */}
+      {isLoaded && (
+        <button
+          onClick={toggleMapMode}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            fontFamily: 'Roboto, Arial, sans-serif',
+            zIndex: 1000,
+            backgroundColor: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '6px 12px',
+            fontSize: '14px',
+            fontWeight: '500',
+            color: 'black',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2), 0 1px 6px rgba(0,0,0,0.1)',
+            transition: 'box-shadow 0.3s ease',
+            minWidth: '40px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#ebebeb';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+          }}
+        >
+          {isGreyMode ? 'Color' : 'Grey'}
+        </button>
+      )}
+    </div>
   );
 });
 
