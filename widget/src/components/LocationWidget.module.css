@@ -1,8 +1,7 @@
 .overlay{
     background-color: white;
     width: 400px;
-    min-height: 350px;
-    max-height: 500px;
+    height: 500px;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -41,30 +40,36 @@
 }
 
 .active{
-    padding-bottom: 15px;
+    padding-bottom: 15px !important;
     font-weight: bold;
     color: #2fc89b;
 }
 
 .metrics{
     overflow-y: scroll;
-    max-height: 300px;
+    max-height: 250px;
+    outline: none;
+    padding-inline-end: 10px;
 }
 
 .metric_header{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-inline: 5px;
+    padding: 10px 10px;
     border-radius: 5px;
 }
 
 .metric_container{
-    padding: 5px 15px;
     border-bottom: 0.5px solid rgb(199, 199, 199);
 }
 
+.more_details{
+    padding-inline: 10px;
+}
+
 .metric_desc{
+    margin-block: 7px;
     font-weight: 600;
 }
 
@@ -101,6 +106,7 @@
     color: #205ad1;
 }
 .poweredBy{
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;

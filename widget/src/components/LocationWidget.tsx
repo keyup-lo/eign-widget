@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, memo, useMemo, useRef } from 'react';
 import Image from 'next/image'
-import './widget.css';
+import styles from './LocationWidget.module.css';
+import livingIcon from './assets/images/living.png';
+import educationIcon from './assets/images/education.png';
+import accessIcon from './assets/images/access.png';
+import eignLogo from './assets/images/eign_logo.png';
 
 interface LocationData {
     locationName: string;
@@ -72,28 +76,6 @@ interface GoogleMapProps {
 }
 
 // Memoized GoogleMap component to prevent re-renders
-/*
-const GoogleMap = memo(function GoogleMap({ coordinates, locationName, googleMapsApiKey }: GoogleMapProps) {
-  console.log('GoogleMap component rendered for:', locationName);
-  const mapSrc = `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(locationName)}&zoom=15`;
-      return (
-    <iframe
-      src={mapSrc}
-      width="1000px"
-      height="700px"
-      style={{ 
-        border: 0,
-        borderRadius: '12px' // Add border radius here
-    }}
-      allowFullScreen
-      loading="lazy"
-      referrerPolicy="no-referrer-when-downgrade"
-      title={`Map of ${locationName}`}
-    />
-  );
-});
-*/
-
 const GoogleMap = memo(function GoogleMap({ coordinates, locationName, googleMapsApiKey }: GoogleMapProps) {
   console.log('GoogleMap component rendered for:', locationName);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -619,9 +601,9 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
   }, [location]);
 
   const categories = [
-    { id: 'living', icon: '/images/living.png', label: 'Living'},
-    { id: 'education', icon: '/images/education.png', label: 'Education'},
-    { id: 'access', icon: '/images/access.png', label: 'Access'}
+    { id: 'living', icon: livingIcon, label: 'Living'},
+    { id: 'education', icon: educationIcon, label: 'Education'},
+    { id: 'access', icon: accessIcon, label: 'Access'}
   ];
 
   const toggleExpanded = (metricKey: string) => {
@@ -645,34 +627,43 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
   }, [locationData, googleMapsApiKey]);
 
   return (
-    <div className="">
+    <div className='location-widget-container'
+    style={{
+      position: 'relative',
+      width: '1000px',
+      height: '700px',
+      margin: '20px auto',
+      borderRadius: '12px',
+      overflow: 'hidden'  // Ensures rounded corners work properly
+    }}
+  >
       {/* Background Map - Now memoized and won't re-render */}
       <div className="absolute inset-0">
         {mapComponent}
       </div>
 
       {/* Overlay Content */}
-      <div className="absolute inset-0 p-6 overlay">
-          <div className="categories flex flex-wrap gap-1 mb-6">
+      <div className={`absolute inset-0 p-6 ${styles.overlay}`}>
+          <div className={`${styles.categories} flex flex-wrap gap-1 mb-6`}>
             {categories.map((category) => {
               const Icon = category.icon;
               return (
                 <div key={category.id} onClick={() => setActiveCategory(category.id)} 
-                className={activeCategory===category.id ? 'category cursor-pointer active' : 'category cursor-pointer'}>
+                className={activeCategory===category.id ? `${styles.category} cursor-pointer ${styles.active}` : `${styles.category} cursor-pointer`}>
                     <Image
                         src={category.icon}
                         alt={category.label}
                         width={25}
                         height={25}
-                        className='category_img'
+                        className={styles.category_img}
                     />
-                    <p className='category_p'>{category.label}</p>
+                    <p className={styles.category_p}>{category.label}</p>
                 </div>
               );
             })}
           </div>
 
-          <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-lg p-4">
+          <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-lg">
             {/**add code for when loading */}
             {loading ? (
               <div className="flex items-center justify-center h-32">
@@ -680,17 +671,17 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
                 <span className="ml-2 text-sm text-gray-600">Loading...</span>
               </div>
             ) : locationData ? (
-              <div className="space-y-3 metrics">
+              <div className={`space-y-3 ${styles.metrics}`}>
                 {Object.entries(locationData.metrics)
                   .filter(([key, metric]) => metric.category === activeCategory)
                   .map(([key, metric]) => {
                     const isExpanded = expandedMetric === key;
                     return(
-                      <div key={key} className='metric_container'>
-                    <div className="metric_header" onClick={() => toggleExpanded(key)}>
-                      <div className='metric_details'>
-                        <p className='metric_score'>{Math.round(metric.score * 10)/10}</p>
-                        <p className={isExpanded ? 'bold_label' : 'metric_label'}>{metric.label}</p>
+                      <div key={key} className={styles.metric_container}>
+                    <div className={styles.metric_header} onClick={() => toggleExpanded(key)}>
+                      <div className={styles.metric_details}>
+                        <p className={styles.metric_score}>{Math.round(metric.score * 10)/10}</p>
+                        <p className={isExpanded ? styles.bold_label : styles.metric_label}>{metric.label}</p>
                       </div>
                       {isExpanded ? (
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -705,13 +696,13 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
                     
                     </div>
                     {isExpanded && (
-                      <div className="more_details">
-                        <p className='metric_desc'>
+                      <div className={styles.more_details}>
+                        <p className={styles.metric_desc}>
                           {metric.description}
                         </p>
                         
                         {/* Enhanced Progress Bar */}
-                        <div style={{ width: '100%', marginBottom: '10px' }}>
+                        <div style={{ width: '100%', marginBlock: '20px' }}>
                           <div style={{ 
                             display: 'flex', 
                             justifyContent: 'space-between', 
@@ -755,14 +746,14 @@ async function geocodeLocation(locationName: string): Promise<{ lat: number; lng
             )}
           </div>
 
-          <div className='poweredBy'>
+          <div className={styles.poweredBy}>
             <p>Powered by</p>
             <Image
-                src={'/images/eign_logo.png'}
+                src={eignLogo}
                 alt='eign_logo'
                 width={70}
                 height={30}
-                className='eign_logo'
+                className={styles.eign_logo}
             />
           </div>
         </div>
